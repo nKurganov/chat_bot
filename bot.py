@@ -23,17 +23,18 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
     try:
-        # Использование Chat API для генерации ответа
+        # Используем Chat API для генерации ответа
         response = co.chat(
-            model="command-r-plus",  # Совместимая модель для чата
-            messages=[{"role": "user", "content": user_message}]  # Сообщение от пользователя
+            model="command-r-plus",  # Убедитесь, что модель совместима с API
+            messages=[{"role": "user", "content": user_message}]
         )
-        bot_reply = response.message.content
+        # Получение текста из ответа
+        bot_reply = response.message.content if response.message else "Извините, я не смог ответить на ваш запрос."
         await update.message.reply_text(bot_reply)
 
-    except cohere.error.CohereError as e:
+    except cohere.errors.CohereError as e:
         # Обработка ошибок API Cohere
-        await update.message.reply_text("Ошибка: Некорректный запрос к API Cohere. Проверьте настройки.")
+        await update.message.reply_text("Ошибка: Некорректный запрос к API Cohere.")
         print(f"CohereError: {e}")
 
     except Exception as e:
