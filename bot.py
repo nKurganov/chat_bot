@@ -3,14 +3,15 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 import cohere
+from cohere.error import CohereError, BadRequestError
 
 # Загрузка токенов из .env
 load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
-# Инициализация Cohere ClientV2
-co = cohere.ClientV2(api_key=COHERE_API_KEY)
+# Инициализация Cohere Client
+co = cohere.Client(api_key=COHERE_API_KEY)
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -25,16 +26,22 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Используем Chat API для генерации ответа
         response = co.chat(
-            model="command-r-plus",  # Убедитесь, что модель совместима с API
+            model="command-r-plus",  # Убедитесь, что модель поддерживает Chat API
             messages=[{"role": "user", "content": user_message}]
         )
-        # Получение текста из ответа
+
+        # Извлечение текста из ответа
         bot_reply = response.message.content if response.message else "Извините, я не смог ответить на ваш запрос."
         await update.message.reply_text(bot_reply)
 
-    except cohere.errors.CohereError as e:
+    except BadRequestError as e:
+        # Обработка ошибок неверного запроса
+        await update.message.reply_text("Ошибка: Неверный запрос к API Cohere. Проверьте ваш запрос.")
+        print(f"BadRequestError: {e}")
+
+    except CohereError as e:
         # Обработка ошибок API Cohere
-        await update.message.reply_text("Ошибка: Некорректный запрос к API Cohere.")
+        await update.message.reply_text("Ошибка: Проблема с API Cohere.")
         print(f"CohereError: {e}")
 
     except Exception as e:
