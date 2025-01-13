@@ -3,7 +3,6 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 import cohere
-from cohere.error import CohereError, BadRequestError
 
 # Загрузка токенов из .env
 load_dotenv()
@@ -34,14 +33,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_reply = response.message.content if response.message else "Извините, я не смог ответить на ваш запрос."
         await update.message.reply_text(bot_reply)
 
-    except BadRequestError as e:
-        # Обработка ошибок неверного запроса
-        await update.message.reply_text("Ошибка: Неверный запрос к API Cohere. Проверьте ваш запрос.")
-        print(f"BadRequestError: {e}")
-
-    except CohereError as e:
+    except cohere.CohereError as e:
         # Обработка ошибок API Cohere
-        await update.message.reply_text("Ошибка: Проблема с API Cohere.")
+        await update.message.reply_text("Ошибка: Проблема с API Cohere. Проверьте запрос.")
         print(f"CohereError: {e}")
 
     except Exception as e:
