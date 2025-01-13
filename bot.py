@@ -14,7 +14,7 @@ co = cohere.Client(COHERE_API_KEY)
 
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Привет! Я чат-бот созданый студентом группы РИС-20-1бз Кургановым Н.В. Напишите что-нибудь, и я постараюсь ответить.")
+    await update.message.reply_text("Привет! Я чат-бот, созданный студентом группы РИС-20-1бз Кургановым Н.В. Напишите что-нибудь, и я постараюсь ответить.")
 
 # Обработка сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -23,7 +23,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         # Генерация ответа с использованием Cohere.ai
         response = co.generate(
-            model='command-xlarge-nightly',  # Выбор модели
+            model='command-xlarge-nightly',  # Убедитесь, что модель поддерживает `generate`
             prompt=f"User: {user_message}\nBot:",
             max_tokens=150,
             temperature=0.7
@@ -31,7 +31,13 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_reply = response.generations[0].text.strip()
         await update.message.reply_text(bot_reply)
 
+    except cohere.CohereError as e:
+        # Обработка ошибок Cohere
+        await update.message.reply_text("Ошибка на стороне Cohere. Проверьте настройки модели.")
+        print(f"CohereError: {e}")
+
     except Exception as e:
+        # Общая обработка ошибок
         await update.message.reply_text("Произошла ошибка при обработке запроса.")
         print(f"Error: {e}")
 
