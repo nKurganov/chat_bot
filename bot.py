@@ -1,11 +1,7 @@
 import os
-try:
-    from telegram import Update
-    from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
-except ModuleNotFoundError:
-    print("Ошибка: Модуль 'telegram' не найден. Убедитесь, что библиотека 'python-telegram-bot' установлена.")
-    exit(1)
-
+import asyncio
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from dotenv import load_dotenv
 import cohere
 
@@ -20,39 +16,38 @@ if not TELEGRAM_BOT_TOKEN or not COHERE_API_KEY:
     exit(1)
 
 # Инициализация Cohere Client V2
-co = cohere.ClientV2(api_key=COHERE_API_KEY)
+co = cohere.Client(api_key=COHERE_API_KEY)
 
 # Обработчик команды /start
-def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    update.message.reply_text(
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
         "Привет! Я чат-бот, созданный студентом группы РИС-20-1бз Кургановым Н.В. "
         "Напишите что-нибудь, и я постараюсь ответить."
     )
 
 # Обработчик сообщений
-def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
     try:
         # Используем метод chat для генерации ответа
         response = co.chat(
             model="command-r-plus-08-2024",  # Или другая доступная модель
-            messages=[{"role": "user", "content": user_message}]
+            message=user_message
         )
 
         # Извлечение текста из ответа
-        # По документации Cohere Chat API: response.text -> основной ответ
         bot_reply = response.text.strip() if response.text else "Извините, я не смог ответить на ваш запрос."
-        update.message.reply_text(bot_reply)
+        await update.message.reply_text(bot_reply)
 
-    except cohere.CohereError as e:
+    except cohere.CohereAPIError as e:
         # Обработка ошибок API Cohere
-        update.message.reply_text("Ошибка: Проблема с API Cohere. Проверьте запрос.")
+        await update.message.reply_text("Ошибка: Проблема с API Cohere. Проверьте запрос.")
         print(f"CohereError: {e}")
 
     except Exception as e:
         # Общая обработка ошибок
-        update.message.reply_text("Произошла ошибка при обработке запроса.")
+        await update.message.reply_text("Произошла ошибка при обработке запроса.")
         print(f"Error: {e}")
 
 # Запуск бота
@@ -70,32 +65,3 @@ if __name__ == "__main__":
 
     print("Бот запущен. Ожидаем сообщения...")
     app.run_polling()
-
-
-# -------------------------------------------------
-# TEST CASES (pseudo-code / placeholders):
-# -------------------------------------------------
-# 1. Test basic greeting:
-#    Input:  "Привет!"
-#    Expect: Bot replies with a coherent greeting or some default response.
-#
-# 2. Test empty message:
-#    Input:  ""
-#    Expect: Bot might reply with "Извините, я не смог ответить на ваш запрос." 
-#    (Please confirm if that's the desired behavior!)
-#
-# 3. Test longer text:
-#    Input:  "Расскажи мне о космических исследованиях, пожалуйста."
-#    Expect: Bot returns some short summary about space exploration.
-#
-# 4. Test special characters or unusual input:
-#    Input:  "@#$%^&*()!"
-#    Expect: Bot either responds with some default fallback or an error message.
-#
-# -------------------------------------------------
-# PLEASE CLARIFY:
-# -------------------------------------------------
-# - What should happen if the user sends an empty message or unsupported characters?
-# - Do you want fallback responses for certain categories of input?
-#
-# Feel free to describe your expected behavior in these scenarios, and we can adjust the code accordingly.
