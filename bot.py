@@ -9,33 +9,31 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
-# Настройка Cohere API
-co = cohere.Client(COHERE_API_KEY)
+# Инициализация Cohere ClientV2
+co = cohere.ClientV2(api_key=COHERE_API_KEY)
 
-# Команда /start
+# Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Привет! Я чат-бот, созданный студентом группы РИС-20-1бз Кургановым Н.В. Напишите что-нибудь, и я постараюсь ответить."
     )
 
-# Обработка сообщений
+# Обработчик сообщений
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
     try:
-        # Генерация ответа с использованием Cohere.ai
-        response = co.generate(
-            model='command-xlarge-nightly',  # Подходящая модель
-            prompt=f"User: {user_message}\nBot:",
-            max_tokens=150,
-            temperature=0.7
+        # Использование Chat API для генерации ответа
+        response = co.chat(
+            model="command-r-plus",  # Совместимая модель для чата
+            messages=[{"role": "user", "content": user_message}]  # Сообщение от пользователя
         )
-        bot_reply = response.generations[0].text.strip()
+        bot_reply = response.message.content
         await update.message.reply_text(bot_reply)
 
-    except cohere.errors.CohereError as e:
-        # Обработка ошибок Cohere
-        await update.message.reply_text("Ошибка на стороне Cohere. Проверьте настройки.")
+    except cohere.error.CohereError as e:
+        # Обработка ошибок API Cohere
+        await update.message.reply_text("Ошибка: Некорректный запрос к API Cohere. Проверьте настройки.")
         print(f"CohereError: {e}")
 
     except Exception as e:
@@ -47,7 +45,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 if __name__ == "__main__":
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Обработчики команд и сообщений
+    # Добавление обработчиков команд и сообщений
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
