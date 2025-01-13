@@ -9,8 +9,8 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 COHERE_API_KEY = os.getenv("COHERE_API_KEY")
 
-# Инициализация Cohere Client
-co = cohere.Client(api_key=COHERE_API_KEY)
+# Инициализация Cohere Client V2
+co = cohere.ClientV2(api_key=COHERE_API_KEY)
 
 # Обработчик команды /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -23,20 +23,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_message = update.message.text
 
     try:
-        # Используем Chat API для генерации ответа
+        # Используем метод chat для генерации ответа
         response = co.chat(
-            model="command-r-plus",  # Убедитесь, что модель поддерживает Chat API
+            model="command-r-plus-08-2024",  # Совместимая модель
             messages=[{"role": "user", "content": user_message}]
         )
 
         # Извлечение текста из ответа
-        bot_reply = response.message.content if response.message else "Извините, я не смог ответить на ваш запрос."
+        bot_reply = response.message.content.strip() if response.message else "Извините, я не смог ответить на ваш запрос."
         await update.message.reply_text(bot_reply)
 
-    except cohere.CohereError as e:
+    except cohere.error.CohereAPIError as e:
         # Обработка ошибок API Cohere
         await update.message.reply_text("Ошибка: Проблема с API Cohere. Проверьте запрос.")
-        print(f"CohereError: {e}")
+        print(f"CohereAPIError: {e}")
 
     except Exception as e:
         # Общая обработка ошибок
